@@ -1,3 +1,19 @@
+class Quiz:
+    def __init__(self, question, choices, answer):
+        self.question = question
+        self.choices = choices
+        self.answer = answer
+
+    def print_quiz(self):
+        print(f'{self.question}\n')
+
+        for i, choice in enumerate(self.choices):
+            print(f'{i + 1}. {choice}')
+
+    def confirm_answer(self):
+        if get_num(False) == self.answer: return True
+        return False
+
 def print_menu():
     print("========================================")
     print("🎯 나만의 퀴즈 게임 🎯")
