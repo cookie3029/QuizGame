@@ -1,3 +1,11 @@
+import os
+import json
+
+quiz_list = []
+score = 0
+
+FILE_NAME = "state.json"
+
 DEFAULT_DATA = {
     "quizzes": [
         {
@@ -37,12 +45,32 @@ class Quiz:
     def print_quiz(self):
         print(f'{self.question}\n')
 
-        for i, choice in enumerate(self.choices):
-            print(f'{i + 1}. {choice}')
+        for i in range(len(self.choices)):
+            print(f'{i + 1}. {self.choices[i]}')
 
     def confirm_answer(self):
         if get_num(False) == self.answer: return True
         return False
+
+def initialization():
+    if not os.path.exists(FILE_NAME):
+        print("⚠️ 파일이 존재하지 않습니다. 새로운 파일을 생성합니다.")
+        save_file()
+
+    try:
+        with open(FILE_NAME, "r", encoding="utf-8") as f:
+            data = json.load(f)
+    except (json.JSONDecodeError, UnicodeDecodeError):
+        print("⚠️ 데이터 파일이 손상되었거나 읽을 수 없습니다. 기본 데이터로 복구합니다.")
+        save_file()
+        data = DEFAULT_DATA
+
+    for _, quiz in enumerate(data["quizzes"]):
+        quiz_list.append(Quiz(quiz["question"], quiz["choices"], quiz["answer"]))        
+
+def save_file():
+    with open(FILE_NAME, "w", encoding="utf-8") as f:
+        json.dump(DEFAULT_DATA, f, ensure_ascii=False, indent=4)
 
 def print_menu():
     print("========================================")
@@ -57,12 +85,12 @@ def print_menu():
 
 def get_num(isMenu):
     if isMenu: player_num = input("선택: ").strip()
-    else: player_num = input("정답 입력: ")
+    else: player_num = input("정답 입력: ").strip()
 
     try:
         choice = int(player_num)
 
-        if (isMenu and (choice > 5 or choice < 1)) or (not isMenu (choice > 4 or choice < 1)):
+        if (isMenu and (choice > 5 or choice < 1)) or (not isMenu and (choice > 4 or choice < 1)):
             raise ValueError
     except ValueError:
         print("⚠️ 잘못된 입력입니다. 1-5 사이의 숫자를 입력하세요.")
@@ -75,13 +103,25 @@ def get_num(isMenu):
     return choice
 
 def process_data(choice):
+    global score 
+
     match choice:
-        case 1: print("퀴즈 풀기")
+        case 1: 
+            for i in range(len(quiz_list)):
+                quiz_list[i].print_quiz()
+                if quiz_list[i].confirm_answer(): 
+                    print("정답입니다!")
+                    score = score + 1
+                else: print("오답입니다!")
+            print(f'총 {score}점 획득하셨습니다.')
         case 2: print("퀴즈 추가")
         case 3: print("퀴즈 목록")
         case 4: print("점수 화인")   
 
+initialization()
+
 while True:
+
     print_menu()
 
     choice = get_num(True) 
