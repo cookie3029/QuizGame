@@ -45,8 +45,8 @@ class Quiz:
 
         list(map(lambda x: print(f'{x[0]}. {x[1]}'), enumerate(self.choices, 1)))
 
-    def confirm_answer(self):
-        return quiz_game.get_num("정답") == self.answer
+    def confirm_answer(self, result):
+        return result == self.answer
 
 class QuizGame:
     def __init__(self):
@@ -80,14 +80,22 @@ class QuizGame:
         for i in range(len(self.quiz_list)):
             self.quiz_list[i].print_quiz(i)
             print()
-            if self.quiz_list[i].confirm_answer(): 
+            
+            while True:
+                player_answer = self.get_num("정답")
+                if player_answer != -1:  
+                    break
+
+            if self.quiz_list[i].confirm_answer(player_answer): 
                 print("정답입니다!")
                 self.score = self.score + 1
-            else: print("오답입니다!")
+            else: 
+                print("오답입니다!")
             print("----------------------------------------")
 
         if self.score > self.data["best_score"]:
             self.data["best_score"] = self.score
+            self.save_file(self.data)
         
         print(f'총 {self.data["best_score"]}점 획득하셨습니다.')
         print("----------------------------------------")
@@ -158,7 +166,7 @@ class QuizGame:
             print()
             print("⚠️ 프로그램을 비정상적으로 종료되었습니다.")
             print("⚠️ 데이터를 저장하고 프로그램을 종료합니다.")
-            self.save_file(self.data)
+
             return 0
 
         return choice
