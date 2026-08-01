@@ -35,7 +35,8 @@ DEFAULT_DATA = {
             "choices": ["케이스", "쿨러", "메인보드", "랜카드"],
             "answer": 3
         }
-    ]
+    ],
+    "best_score":0
 }
 
 class Quiz:
@@ -55,6 +56,8 @@ class Quiz:
         return False
 
 def initialization():
+    global data
+
     if not os.path.exists(FILE_NAME):
         print("⚠️ 파일이 존재하지 않습니다. 새로운 파일을 생성합니다.")
         save_file(DEFAULT_DATA)
@@ -70,6 +73,12 @@ def initialization():
     for _, quiz in enumerate(data["quizzes"]):
         quiz_list.append(Quiz(quiz["question"], quiz["choices"], quiz["answer"]))        
 
+    highest_score = data["best_score"]
+
+    print(f"📂 저장된 데이터를 불러왔습니다. (퀴즈 {len(quiz_list)}개, 최고점수 {int(highest_score / len(quiz_list) * 100)}점)")
+    print("========================================")
+
+
 def save_file(data):
     with open(FILE_NAME, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=4)
@@ -78,6 +87,9 @@ def print_menu():
     print("========================================")
     print("🎯 나만의 퀴즈 게임 🎯")
     print("========================================")
+
+    if len(quiz_list) < 1: initialization()
+
     print("1. 퀴즈 풀기")
     print("2. 퀴즈 추가")   
     print("3. 퀴즈 목록")
@@ -130,6 +142,15 @@ def add_quiz():
 
     print("✅ 퀴즈가 추가되었습니다!")
 
+def show_quiz_list():
+    print("----------------------------------------")
+    list(map(lambda x: print(f"[{x[0]}] {x[1].question}"), enumerate(quiz_list, 1)))
+    print("----------------------------------------")
+
+def show_quiz_score():
+    quiz_count = len(quiz_list)
+    print(f"🏆 최고 점수: {quiz_count * data["best_score"] * 100}점 ({quiz_count}문제 중 {data["best_score"]}문제 정답)")
+
 def process_data(choice):
     global score, highest_score
 
@@ -144,12 +165,13 @@ def process_data(choice):
 
             if highest_score < score:
                 highest_score = score
+
+            data["best_score"] = highest_score
+            
             print(f'총 {score}점 획득하셨습니다.')
         case 2: add_quiz()
-        case 3: print("퀴즈 목록")
-        case 4: print("점수 확인")   
-
-initialization()
+        case 3: show_quiz_list()
+        case 4: show_quiz_score() 
 
 while True:
 
