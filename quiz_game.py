@@ -163,14 +163,18 @@ class QuizGame:
 
         return choice
 
-quiz_game = QuizGame()
+    def game_start(self):
+        while True:
+            self.print_menu()
+            choice = self.get_num("메뉴") 
 
-while True:
-    quiz_game.print_menu()
-    choice = quiz_game.get_num("메뉴") 
+            if choice == -1: continue
+            elif choice == 0 or choice == 5: 
+                self.save_file(self.data)
+                break   
+            else: self.process_data(choice)
 
-    if choice == -1: continue
-    elif choice == 0 or choice == 5: 
-        quiz_game.save_file(quiz_game.data)
-        break   
-    else: quiz_game.process_data(choice)
+if __name__ == "__main__":
+    quiz_game = QuizGame()
+    quiz_game.game_start()
+
