@@ -3,6 +3,8 @@ import json
 
 quiz_list = []
 score = 0
+highest_score = 0
+data = {}
 
 FILE_NAME = "state.json"
 
@@ -55,22 +57,22 @@ class Quiz:
 def initialization():
     if not os.path.exists(FILE_NAME):
         print("⚠️ 파일이 존재하지 않습니다. 새로운 파일을 생성합니다.")
-        save_file()
+        save_file(DEFAULT_DATA)
 
     try:
         with open(FILE_NAME, "r", encoding="utf-8") as f:
             data = json.load(f)
     except (json.JSONDecodeError, UnicodeDecodeError):
         print("⚠️ 데이터 파일이 손상되었거나 읽을 수 없습니다. 기본 데이터로 복구합니다.")
-        save_file()
         data = DEFAULT_DATA
+        save_file(data)
 
     for _, quiz in enumerate(data["quizzes"]):
         quiz_list.append(Quiz(quiz["question"], quiz["choices"], quiz["answer"]))        
 
-def save_file():
+def save_file(data):
     with open(FILE_NAME, "w", encoding="utf-8") as f:
-        json.dump(DEFAULT_DATA, f, ensure_ascii=False, indent=4)
+        json.dump(data, f, ensure_ascii=False, indent=4)
 
 def print_menu():
     print("========================================")
@@ -93,7 +95,10 @@ def get_num(isMenu):
         if (isMenu and (choice > 5 or choice < 1)) or (not isMenu and (choice > 4 or choice < 1)):
             raise ValueError
     except ValueError:
-        print("⚠️ 잘못된 입력입니다. 1-5 사이의 숫자를 입력하세요.")
+        if isMenu:
+            print("⚠️ 잘못된 입력입니다. 1-5 사이의 숫자를 입력하세요.")
+        else:
+            print("⚠️ 잘못된 입력입니다. 1-4 사이의 숫자를 입력하세요.")
         return -1
     except (KeyboardInterrupt, EOFError):
         print("⚠️ 프로그램을 비정상적으로 종료되었습니다.")
@@ -102,8 +107,31 @@ def get_num(isMenu):
 
     return choice
 
+def add_quiz():
+    global data
+
+    choices = []
+
+    print("📌 새로운 퀴즈를 추가합니다.\n")
+
+    question = input("문제를 입력하세요: ")
+
+    for i in range(1, 5):
+        choices.append(input(f"선택지 {i}"))
+
+    # answer = int(input("정답 번호 (1~4): "))
+    answer = get_num(False)
+
+    quiz_list.append(Quiz(question, choices, answer))
+
+    data["quizzes"] = list(map(vars, quiz_list))
+
+    save_file(data)
+
+    print("✅ 퀴즈가 추가되었습니다!")
+
 def process_data(choice):
-    global score 
+    global score, highest_score
 
     match choice:
         case 1: 
@@ -113,10 +141,13 @@ def process_data(choice):
                     print("정답입니다!")
                     score = score + 1
                 else: print("오답입니다!")
+
+            if highest_score < score:
+                highest_score = score
             print(f'총 {score}점 획득하셨습니다.')
-        case 2: print("퀴즈 추가")
+        case 2: add_quiz()
         case 3: print("퀴즈 목록")
-        case 4: print("점수 화인")   
+        case 4: print("점수 확인")   
 
 initialization()
 
