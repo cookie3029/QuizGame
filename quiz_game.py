@@ -1,11 +1,6 @@
 import os
 import json
 
-quiz_list = []
-score = 0
-highest_score = 0
-data = {}
-
 FILE_NAME = "state.json"
 
 DEFAULT_DATA = {
@@ -48,21 +43,17 @@ class Quiz:
     def print_quiz(self):
         print(f'{self.question}\n')
 
-        for i in range(len(self.choices)):
-            print(f'{i + 1}. {self.choices[i]}')
+        list(map(lambda x: print(f'{x[[0]]}. {x[1]}'), enumerate(self.choices, 1)))
 
     def confirm_answer(self):
-        if get_num(False) == self.answer: return True
-        return False
+        return quiz_game.get_num(False) == self.answer
 
 class QuizGame:
-
-    def save_file(data):
+    def save_file(self):
         with open(FILE_NAME, "w", encoding="utf-8") as f:
-            json.dump(data, f, ensure_ascii=False, indent=4)
+            json.dump(self.data, f, ensure_ascii=False, indent=4)
 
     def initialization(self):
-        global data
 
         if not os.path.exists(FILE_NAME):
             print("⚠️ 파일이 존재하지 않습니다. 새로운 파일을 생성합니다.")
@@ -73,114 +64,105 @@ class QuizGame:
                 data = json.load(f)
         except (json.JSONDecodeError, UnicodeDecodeError):
             print("⚠️ 데이터 파일이 손상되었거나 읽을 수 없습니다. 기본 데이터로 복구합니다.")
-            data = DEFAULT_DATA
-            self.save_file(data)
+            self.save_file(DEFAULT_DATA)
+            self.data = DEFAULT_DATA
 
-        for _, quiz in enumerate(data["quizzes"]):
-            quiz_list.append(Quiz(quiz["question"], quiz["choices"], quiz["answer"]))        
+        self.quiz_list = [Quiz(quiz["question"], quiz["choices"], quiz["answer"]) for _, quiz in enumerate(data["quizzes"])]
 
-        highest_score = data["best_score"]
-
-        print(f"📂 저장된 데이터를 불러왔습니다. (퀴즈 {len(quiz_list)}개, 최고점수 {int(highest_score / len(quiz_list) * 100)}점)")
+        print(f"📂 저장된 데이터를 불러왔습니다. (퀴즈 {len(self.quiz_list)}개, 최고점수 {int(data["best_score"] / len(self.quiz_list) * 100)}점)")
         print("========================================")
 
+    def solve_quiz(self):
+        for i in range(len(self.quiz_list)):
+            self.quiz_list[i].print_quiz()
+            if self.quiz_list[i].confirm_answer(): 
+                print("정답입니다!")
+                self.score = self.score + 1
+            else: print("오답입니다!")
+
+        if self.score > self.best_score:
+            self.data["best_score"] = self.score
+        
+        print(f'총 {self.score}점 획득하셨습니다.')
+
     def add_quiz(self):
-        global data
-
-        choices = []
-
         print("📌 새로운 퀴즈를 추가합니다.\n")
 
-        question = input("문제를 입력하세요: ")
+        self.question = input("문제를 입력하세요: ")
 
-        for i in range(1, 5):
-            choices.append(input(f"선택지 {i}"))
+        self.choices = [input(f"선택지 {i}") for i in range(1, 5)]
 
-        answer = get_num(False)
+        self.answer = self.get_num(False)
 
-        quiz_list.append(Quiz(question, choices, answer))
+        self.quiz_list.append(Quiz(self.question, self.choices, self.answer))
 
-        data["quizzes"] = list(map(vars, quiz_list))
+        self.data["quizzes"] = list(map(vars, self.quiz_list))
 
-        self.save_file(data)
+        self.save_file(self.data)
 
         print("✅ 퀴즈가 추가되었습니다!")
 
     def show_quiz_list(self):
         print("----------------------------------------")
-        list(map(lambda x: print(f"[{x[0]}] {x[1].question}"), enumerate(quiz_list, 1)))
+        list(map(lambda x: print(f"[{x[0]}] {x[1].question}"), enumerate(self.quiz_list, 1)))
         print("----------------------------------------")
 
     def show_quiz_score(self):
-        quiz_count = len(quiz_list)
-        print(f"🏆 최고 점수: {quiz_count * data["best_score"] * 100}점 ({quiz_count}문제 중 {data["best_score"]}문제 정답)")
+        quiz_count = len(self.quiz_list)
+        print(f"🏆 최고 점수: {quiz_count * self.data["best_score"] * 100}점 ({quiz_count}문제 중 {self.data["best_score"]}문제 정답)")
 
     def process_data(self, choice):
         global score, highest_score
 
         match choice:
-            case 1: 
-                for i in range(len(quiz_list)):
-                    quiz_list[i].print_quiz()
-                    if quiz_list[i].confirm_answer(): 
-                        print("정답입니다!")
-                        score = score + 1
-                    else: print("오답입니다!")
-
-                if highest_score < score:
-                    highest_score = score
-
-                data["best_score"] = highest_score
-                
-                print(f'총 {score}점 획득하셨습니다.')
+            case 1: self.solve_quiz()
             case 2: self.add_quiz()
             case 3: self.show_quiz_list()
             case 4: self.show_quiz_score() 
 
-def print_menu():
-    print("========================================")
-    print("🎯 나만의 퀴즈 게임 🎯")
-    print("========================================")
+    def print_menu(self):
+        print("========================================")
+        print("🎯 나만의 퀴즈 게임 🎯")
+        print("========================================")
 
-    if len(quiz_list) < 1: initialization()
+        if len(self.quiz_list) < 1: self.initialization()
 
-    print("1. 퀴즈 풀기")
-    print("2. 퀴즈 추가")   
-    print("3. 퀴즈 목록")
-    print("4. 점수 확인")
-    print("5. 종료") 
-    print("========================================")
+        print("1. 퀴즈 풀기")
+        print("2. 퀴즈 추가")   
+        print("3. 퀴즈 목록")
+        print("4. 점수 확인")
+        print("5. 종료") 
+        print("========================================")
 
-def get_num(isMenu):
-    if isMenu: player_num = input("선택: ").strip()
-    else: player_num = input("정답 입력: ").strip()
+    def get_num(self, isMenu):
+        if isMenu: player_num = input("선택: ").strip()
+        else: player_num = input("정답 입력: ").strip()
 
-    try:
-        choice = int(player_num)
+        try:
+            choice = int(player_num)
 
-        if (isMenu and (choice > 5 or choice < 1)) or (not isMenu and (choice > 4 or choice < 1)):
-            raise ValueError
-    except ValueError:
-        if isMenu:
-            print("⚠️ 잘못된 입력입니다. 1-5 사이의 숫자를 입력하세요.")
-        else:
-            print("⚠️ 잘못된 입력입니다. 1-4 사이의 숫자를 입력하세요.")
-        return -1
-    except (KeyboardInterrupt, EOFError):
-        print("⚠️ 프로그램을 비정상적으로 종료되었습니다.")
-        print("⚠️ 데이터를 저장하고 프로그램을 종료합니다.")
-        return 0
+            if (isMenu and (choice > 5 or choice < 1)) or (not isMenu and (choice > 4 or choice < 1)):
+                raise ValueError
+        except ValueError:
+            if isMenu:
+                print("⚠️ 잘못된 입력입니다. 1-5 사이의 숫자를 입력하세요.")
+            else:
+                print("⚠️ 잘못된 입력입니다. 1-4 사이의 숫자를 입력하세요.")
+            return -1
+        except (KeyboardInterrupt, EOFError):
+            print("⚠️ 프로그램을 비정상적으로 종료되었습니다.")
+            print("⚠️ 데이터를 저장하고 프로그램을 종료합니다.")
+            self.save_file()
+            return 0
 
-    return choice
+        return choice
 
-
+quiz_game = QuizGame()
 
 while True:
-
-    print_menu()
-
-    choice = get_num(True) 
+    quiz_game.print_menu()
+    choice = quiz_game.get_num(True) 
 
     if choice == -1: continue
     elif choice == 0 or choice == 5: break   
-    else: process_data(choice)
+    else: quiz_game.process_data(choice)
