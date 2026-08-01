@@ -55,33 +55,87 @@ class Quiz:
         if get_num(False) == self.answer: return True
         return False
 
-def initialization():
-    global data
+class QuizGame:
 
-    if not os.path.exists(FILE_NAME):
-        print("⚠️ 파일이 존재하지 않습니다. 새로운 파일을 생성합니다.")
-        save_file(DEFAULT_DATA)
+    def save_file(data):
+        with open(FILE_NAME, "w", encoding="utf-8") as f:
+            json.dump(data, f, ensure_ascii=False, indent=4)
 
-    try:
-        with open(FILE_NAME, "r", encoding="utf-8") as f:
-            data = json.load(f)
-    except (json.JSONDecodeError, UnicodeDecodeError):
-        print("⚠️ 데이터 파일이 손상되었거나 읽을 수 없습니다. 기본 데이터로 복구합니다.")
-        data = DEFAULT_DATA
-        save_file(data)
+    def initialization(self):
+        global data
 
-    for _, quiz in enumerate(data["quizzes"]):
-        quiz_list.append(Quiz(quiz["question"], quiz["choices"], quiz["answer"]))        
+        if not os.path.exists(FILE_NAME):
+            print("⚠️ 파일이 존재하지 않습니다. 새로운 파일을 생성합니다.")
+            self.save_file(DEFAULT_DATA)
 
-    highest_score = data["best_score"]
+        try:
+            with open(FILE_NAME, "r", encoding="utf-8") as f:
+                data = json.load(f)
+        except (json.JSONDecodeError, UnicodeDecodeError):
+            print("⚠️ 데이터 파일이 손상되었거나 읽을 수 없습니다. 기본 데이터로 복구합니다.")
+            data = DEFAULT_DATA
+            self.save_file(data)
 
-    print(f"📂 저장된 데이터를 불러왔습니다. (퀴즈 {len(quiz_list)}개, 최고점수 {int(highest_score / len(quiz_list) * 100)}점)")
-    print("========================================")
+        for _, quiz in enumerate(data["quizzes"]):
+            quiz_list.append(Quiz(quiz["question"], quiz["choices"], quiz["answer"]))        
 
+        highest_score = data["best_score"]
 
-def save_file(data):
-    with open(FILE_NAME, "w", encoding="utf-8") as f:
-        json.dump(data, f, ensure_ascii=False, indent=4)
+        print(f"📂 저장된 데이터를 불러왔습니다. (퀴즈 {len(quiz_list)}개, 최고점수 {int(highest_score / len(quiz_list) * 100)}점)")
+        print("========================================")
+
+    def add_quiz(self):
+        global data
+
+        choices = []
+
+        print("📌 새로운 퀴즈를 추가합니다.\n")
+
+        question = input("문제를 입력하세요: ")
+
+        for i in range(1, 5):
+            choices.append(input(f"선택지 {i}"))
+
+        answer = get_num(False)
+
+        quiz_list.append(Quiz(question, choices, answer))
+
+        data["quizzes"] = list(map(vars, quiz_list))
+
+        self.save_file(data)
+
+        print("✅ 퀴즈가 추가되었습니다!")
+
+    def show_quiz_list(self):
+        print("----------------------------------------")
+        list(map(lambda x: print(f"[{x[0]}] {x[1].question}"), enumerate(quiz_list, 1)))
+        print("----------------------------------------")
+
+    def show_quiz_score(self):
+        quiz_count = len(quiz_list)
+        print(f"🏆 최고 점수: {quiz_count * data["best_score"] * 100}점 ({quiz_count}문제 중 {data["best_score"]}문제 정답)")
+
+    def process_data(self, choice):
+        global score, highest_score
+
+        match choice:
+            case 1: 
+                for i in range(len(quiz_list)):
+                    quiz_list[i].print_quiz()
+                    if quiz_list[i].confirm_answer(): 
+                        print("정답입니다!")
+                        score = score + 1
+                    else: print("오답입니다!")
+
+                if highest_score < score:
+                    highest_score = score
+
+                data["best_score"] = highest_score
+                
+                print(f'총 {score}점 획득하셨습니다.')
+            case 2: self.add_quiz()
+            case 3: self.show_quiz_list()
+            case 4: self.show_quiz_score() 
 
 def print_menu():
     print("========================================")
@@ -119,59 +173,7 @@ def get_num(isMenu):
 
     return choice
 
-def add_quiz():
-    global data
 
-    choices = []
-
-    print("📌 새로운 퀴즈를 추가합니다.\n")
-
-    question = input("문제를 입력하세요: ")
-
-    for i in range(1, 5):
-        choices.append(input(f"선택지 {i}"))
-
-    # answer = int(input("정답 번호 (1~4): "))
-    answer = get_num(False)
-
-    quiz_list.append(Quiz(question, choices, answer))
-
-    data["quizzes"] = list(map(vars, quiz_list))
-
-    save_file(data)
-
-    print("✅ 퀴즈가 추가되었습니다!")
-
-def show_quiz_list():
-    print("----------------------------------------")
-    list(map(lambda x: print(f"[{x[0]}] {x[1].question}"), enumerate(quiz_list, 1)))
-    print("----------------------------------------")
-
-def show_quiz_score():
-    quiz_count = len(quiz_list)
-    print(f"🏆 최고 점수: {quiz_count * data["best_score"] * 100}점 ({quiz_count}문제 중 {data["best_score"]}문제 정답)")
-
-def process_data(choice):
-    global score, highest_score
-
-    match choice:
-        case 1: 
-            for i in range(len(quiz_list)):
-                quiz_list[i].print_quiz()
-                if quiz_list[i].confirm_answer(): 
-                    print("정답입니다!")
-                    score = score + 1
-                else: print("오답입니다!")
-
-            if highest_score < score:
-                highest_score = score
-
-            data["best_score"] = highest_score
-            
-            print(f'총 {score}점 획득하셨습니다.')
-        case 2: add_quiz()
-        case 3: show_quiz_list()
-        case 4: show_quiz_score() 
 
 while True:
 
